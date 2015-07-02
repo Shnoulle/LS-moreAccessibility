@@ -34,23 +34,35 @@ class moreAccessibility extends PluginBase
             'default'=>0,
             'label' => 'Update asterisk part to show real sentence.'
         ),
+        'addAnswersFieldSet' => array(
+            'type' => 'select',
+            'options'=>array(
+                0=> 'No',
+                1=> 'Yes'
+            ),
+            'default'=>0,
+            'label' => 'Add fieldset to answers art (list and array).'
+        ),
     );
 
     public function __construct(PluginManager $manager, $id) {
         parent::__construct($manager, $id);
         $this->subscribe('beforeQuestionRender','questiontextLabel');
         $this->subscribe('beforeQuestionRender','mandatoryString');
+        $this->subscribe('beforeQuestionRender','questionanswersFieldset');
+
     }
 
     public function questiontextLabel()
     {
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
+        // Label
         if(in_array($sType,array(
             "S","T","U",// Text question
             "N",// Numerical
             "I",// Language changer
-            "!" // List dropdown
+            "!", // List dropdown
             )))
         {
             $oEvent->set('text',CHtml::label(
@@ -61,9 +73,36 @@ class moreAccessibility extends PluginBase
             $oEvent->set('answers',preg_replace('#<label(.*?)>(.*?)</label>#is', '', $oEvent->get('answers')));
         }
         // Date question type give format information, leave it ?
+        // @todo : list radio with coment with dropdown enabled and list radio with dropdown too sometimes
+
     }
+    public function questionanswersFieldset()
+    {
+        if(!$this->get('addAnswersFieldSet'))
+            return;
+        $oEvent=$this->getEvent();
+        $sType=$oEvent->get('type');
+        if(in_array($sType,array(
+            "Q","K", // Multiple question : text/numeric multiple
+            ";",":", // Array of input text/number
+            "Y","G","5","L","O", // Single choice (radio)
+            "F","H","A","B","E","C","1" // The arrays
+            )))
+        {
+            // No legend .... need more HTML update : fieldset must include questiontext + answers.
+            $oEvent->set('answers',CHtml::tag(
+                'fieldset',
+                array('form'=>'limesurvey','class'=>'fixfieldset'),
+                $oEvent->get('answers')
+                ));
+
+        }
+    }
+
     public function mandatoryString()
     {
+        if(!$this->get('updateAsterisk'))
+            return;
         $oEvent=$this->getEvent();
         if($oEvent->get('man_class'))
         {
