@@ -1,9 +1,9 @@
-# more accessibility for LimeSurvey #
+# More accessibility for LimeSurvey #
 
 Some more accessibility for LimeSurvey, actually:
 * Replace the label for single question choice by label to the question (to be included in LimeSurvey core).
-* Use a real string for the asterisk in mandatory question type
-* Add fieldset for list of answers and subquestion
+* Optionnal: Use a real string for the asterisk in mandatory question type
+* Optionnal: Add fieldset for list of answers and subquestion
 
 ## Installation
 

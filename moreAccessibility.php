@@ -104,7 +104,7 @@ class moreAccessibility extends PluginBase
         if(!$this->get('updateAsterisk'))
             return;
         $oEvent=$this->getEvent();
-        if($oEvent->get('man_class'))
+        if($oEvent->get('man_class') && strpos($oEvent->get('man_class'),'mandatory') !== false)
         {
             // Get the string from LimeSurvey core.
             $sMandatoryText=gT('This question is mandatory')."."; // Arg
