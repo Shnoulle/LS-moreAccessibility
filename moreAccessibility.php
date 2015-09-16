@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.1.0
+ * @version 1.2.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ class moreAccessibility extends PluginBase
                 1=> 'Yes'
             ),
             'default'=>0,
-            'label' => 'Add fieldset to answers art (list and array).'
+            'label' => 'Add fieldset to answers art (list and array), attention : this can break your template.'
         ),
     );
 
@@ -82,18 +82,29 @@ class moreAccessibility extends PluginBase
             return;
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
+        tracevar( $sType);
         if(in_array($sType,array(
-            "Q","K", // Multiple question : text/numeric multiple
+            "M","P","Q","K", // Multiple question : text/numeric multiple
             ";",":", // Array of input text/number
             "Y","G","5","L","O", // Single choice (radio)
             "F","H","A","B","E","C","1" // The arrays
             )))
         {
             // No legend .... need more HTML update : fieldset must include questiontext + answers.
+            $sLegend=CHtml::tag("div",array("class"=>'question-moved'),$oEvent->get('text'));
+            $oEvent->set('text','');
+            $sLegend.=CHtml::tag("div",array("class"=>'help-moved'),$oEvent->get('help'));
+            $oEvent->set('help','');
+            $sLegend.=CHtml::tag("div",array("class"=>'man_message-moved'),$oEvent->get('man_message'));
+            $oEvent->set('man_message','');
+            $sLegend.=CHtml::tag("div",array("class"=>'valid_message-moved'),$oEvent->get('valid_message'));
+            $oEvent->set('valid_message','');
+            $sLegend.=CHtml::tag("div",array("class"=>'file_valid_message-moved'),$oEvent->get('file_valid_message'));
+            $oEvent->set('file_valid_message','');
             $oEvent->set('answers',CHtml::tag(
                 'fieldset',
                 array('form'=>'limesurvey','class'=>'fixfieldset'),
-                $oEvent->get('answers')
+                CHtml::tag('legend',array(),$sLegend).$oEvent->get('answers')
                 ));
 
         }
