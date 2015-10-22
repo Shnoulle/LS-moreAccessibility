@@ -65,12 +65,48 @@ class moreAccessibility extends PluginBase
             "!", // List dropdown
             )))
         {
+            $sAnswerId="answer{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}";
             $oEvent->set('text',CHtml::label(
                 $oEvent->get('text'),
-                "answer".$oEvent->get('surveyId')."X".$oEvent->get('gid')."X".$oEvent->get('qid'),
-                array('class'=>"fixlabel")
+                $sAnswerId,
+                array('class'=>"fixlabel",'id'=>"label-{$sAnswerId}")
             ));
-            $oEvent->set('answers',preg_replace('#<label(.*?)>(.*?)</label>#is', '', $oEvent->get('answers')));
+            // find the labelled-by
+            $aLabelledBy=array(
+                "label-{$sAnswerId}",
+            );
+            // What is the good order ?
+            if($this->get('updateAsterisk') && $oEvent->get('man_class'))
+            {
+                $aLabelledBy[]="mandatory-{$oEvent->get('qid')}";
+            }
+            if($oEvent->get('questionhelp'))
+            {
+                $aLabelledBy[]="questionhelp-{$sAnswerId}";
+                $oEvent->set('questionhelp',CHtml::tag('span',array('id'=>"questionhelp-{$sAnswerId}"),$oEvent->get('questionhelp')));
+            }
+            if($oEvent->get('help'))
+            {
+                $aLabelledBy[]="questionhelp-{$sAnswerId}";
+                $oEvent->set('help',CHtml::tag('span',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
+            }
+            if(strip_tags($oEvent->get('valid_message')!=""))
+            {
+                $aLabelledBy[]="vmsg_{$oEvent->get('qid')}";
+            }
+            else
+            {
+                $oEvent->set('valid_message','');
+            }
+            $dom = new DOMDocument();
+            @$dom->loadHTML($oEvent->get('answers'));
+            foreach($dom->getElementsByTagName('label') as $label)
+              $label->parentNode->removeChild($label);
+            $input=$dom->getElementById($sAnswerId);
+            $input->setAttribute("aria-labelledby",implode(" ",$aLabelledBy));
+            $newHtml = $dom->saveHtml();
+
+            $oEvent->set('answers',$newHtml);
         }
         // Date question type give format information, leave it ?
         // @todo : list radio with coment with dropdown enabled and list radio with dropdown too sometimes
@@ -82,7 +118,6 @@ class moreAccessibility extends PluginBase
             return;
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
-        tracevar( $sType);
         if(in_array($sType,array(
             "M","P","Q","K", // Multiple question : text/numeric multiple
             ";",":", // Array of input text/number
@@ -155,7 +190,7 @@ class moreAccessibility extends PluginBase
                     $sMandatoryText="";
                     break;
             }
-            $oEvent->set('mandatory',$sMandatoryText);
+            $oEvent->set('mandatory',CHtml::tag('span',array('id'=>"mandatory-{$oEvent->get('qid')}"),$sMandatoryText));
         }
     }
 }
