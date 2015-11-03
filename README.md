@@ -17,5 +17,6 @@ Some more accessibility for LimeSurvey, actually:
 
 ## Home page & Copyright
 - HomePage <http://extensions.sondages.pro/>
+- Demonstration <http://accessible.sondages.pro> (WIP :can be broken)
 - Copyright © 2015 Denis Chenu <http://sondages.pro>
 - Licence : GNU General Public License <https://www.gnu.org/licenses/gpl-3.0.html>
