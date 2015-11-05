@@ -1,6 +1,7 @@
 # More accessibility for LimeSurvey #
 
 Some more accessibility for LimeSurvey, actually:
+
 - Replace the label for single question choice by label to the question
 - Fix the other label in single choice (radio) and multiple choice
 - Optionnal: Use a real string for the asterisk in mandatory question type
