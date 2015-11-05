@@ -25,6 +25,10 @@ class moreAccessibility extends PluginBase
     static protected $description = 'Update HTML for question for better labelling, and other accessibility waiting for CSS Aria';
 
     protected $settings = array(
+        'infoAlwaysActivate'=>array(
+            'type' => 'info',
+            'content' => 'Some system can not be deactivated : use question text for labelling the single question type, fix checkbox with other label and radio with other label.',
+        ),
         'updateAsterisk' => array(
             'type' => 'select',
             'options'=>array(
@@ -45,14 +49,21 @@ class moreAccessibility extends PluginBase
         ),
     );
 
-    public function __construct(PluginManager $manager, $id) {
-        parent::__construct($manager, $id);
+    /**
+    * Add function to be used in beforeQuestionRender event
+    */
+    public function init()
+    {
         $this->subscribe('beforeQuestionRender','questiontextLabel');
         $this->subscribe('beforeQuestionRender','mandatoryString');
         $this->subscribe('beforeQuestionRender','questionanswersFieldset');
-
+        $this->subscribe('beforeQuestionRender','checkboxLabelOther');
+        $this->subscribe('beforeQuestionRender','radioLabelOther');
     }
 
+    /**
+    * Use the question text as label for single question , use aria-labelledby for help and tips
+    */
     public function questiontextLabel()
     {
         $oEvent=$this->getEvent();
@@ -90,7 +101,7 @@ class moreAccessibility extends PluginBase
                 $aLabelledBy[]="questionhelp-{$sAnswerId}";
                 $oEvent->set('help',CHtml::tag('span',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
             }
-            if(strip_tags($oEvent->get('valid_message')!=""))
+            if(strip_tags($oEvent->get('valid_message'))!="")
             {
                 $aLabelledBy[]="vmsg_{$oEvent->get('qid')}";
             }
@@ -98,13 +109,15 @@ class moreAccessibility extends PluginBase
             {
                 $oEvent->set('valid_message','');
             }
-            $dom = new DOMDocument();
+            Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
+            Yii::import('archon810.SmartDOMDocument');
+            $dom = new \archon810\SmartDOMDocument();
             @$dom->loadHTML($oEvent->get('answers'));
             foreach($dom->getElementsByTagName('label') as $label)
               $label->parentNode->removeChild($label);
             $input=$dom->getElementById($sAnswerId);
             $input->setAttribute("aria-labelledby",implode(" ",$aLabelledBy));
-            $newHtml = $dom->saveHtml();
+            $newHtml = $dom->saveHTMLExact();
 
             $oEvent->set('answers',$newHtml);
         }
@@ -112,6 +125,11 @@ class moreAccessibility extends PluginBase
         // @todo : list radio with coment with dropdown enabled and list radio with dropdown too sometimes
 
     }
+
+    /**
+    * Add fieldset to multiple question or multiple answers, move quetsion text + help + tip to label
+    * @todo maybe leave part as place and use aria-labelledby but need a legend 
+    */
     public function questionanswersFieldset()
     {
         if(!$this->get('addAnswersFieldSet'))
@@ -145,6 +163,9 @@ class moreAccessibility extends PluginBase
         }
     }
 
+    /**
+    * Update the mandatory * to a clean string, according to question type
+    */
     public function mandatoryString()
     {
         if(!$this->get('updateAsterisk'))
@@ -191,6 +212,87 @@ class moreAccessibility extends PluginBase
                     break;
             }
             $oEvent->set('mandatory',CHtml::tag('span',array('id'=>"mandatory-{$oEvent->get('qid')}"),$sMandatoryText));
+        }
+    }
+
+    /*
+     * On checkbox list, when the "other" option is activated, hidden the checkbox and leave only label for other text
+     */
+    public function checkboxLabelOther()
+    {
+        $oEvent=$this->getEvent();
+        $sType=$oEvent->get('type');
+        if(in_array($sType,array(
+            "M", // Input Checkbox List
+            )))
+        {
+          if (strpos( $oEvent->get('answers'), "othercbox") > 0) // Only do it if we have other : can be done with Question::model()->find
+          {
+              $sAnswerOtherTextId="answer{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}other";
+              $sAnswerOtherCboxId="answer{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}othercbox";
+
+              Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
+              Yii::import('archon810.SmartDOMDocument');
+              $dom = new \archon810\SmartDOMDocument();
+              $dom->loadHTML($oEvent->get('answers'));
+              // Update the checkbox
+              $cbox=$dom->getElementById($sAnswerOtherCboxId);
+              $cbox->setAttribute("aria-hidden","true");
+              $cbox->setAttribute("tabindex","-1");
+              $cbox->setAttribute("readonly","readonly");// disabled broken by survey-runtime
+              // remove exiting script
+              while (($r = $dom->getElementsByTagName("script")) && $r->length) {
+                  $r->item(0)->parentNode->removeChild($r->item(0));
+              }
+              $newHtml = $dom->saveHTMLExact();
+              $oEvent->set('answers',$newHtml);
+              // Add own script
+              $sMoreAccessibilityCheckboxLabelOtherScript="$(document).on('keyup focusout','#{$sAnswerOtherTextId}',function(){\n"
+                      . "  if ($.trim($(this).val()).length>0) { $('#{$sAnswerOtherCboxId}').prop('checked',true); } else { $('#{$sAnswerOtherCboxId}').prop('checked',false); }\n"
+                      ." $('#java{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}other').val($(this).val());LEMflagMandOther('{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}other',$('#{$sAnswerOtherCboxId}').is(':checked')); checkconditions($(this).val(), this.name, this.type);\n"
+                      . "});\n"
+                      . "$(document).on('click','#{$sAnswerOtherCboxId}',function(){\n"
+                      . "  $('#{$sAnswerOtherTextId}').focus();\n"
+                      . "})\n";
+              App()->getClientScript()->registerScript('sMoreAccessibilityCheckboxLabelOtherScript',$sMoreAccessibilityCheckboxLabelOtherScript,CClientScript::POS_HEAD);
+          }
+        }
+    }
+    /*
+    * Fix labelling on other in radio list : use aria-labelledby for text input
+    * @link https://www.limesurvey.org/en/forum/plugins/100988-moreaccessibility#127710 Thanks to Alexandre Landry <forXcodeur@gmail.com>
+    */
+    public function radioLabelOther()
+    {
+        $oEvent=$this->getEvent();
+        $sType=$oEvent->get('type');
+        if(in_array($sType,array(
+            "L", // Radio Button List
+            )))
+        {
+          if (strpos( $oEvent->get('answers'), 'id="SOTH') > 0) // Only do it if we have other : can be done with Question::model()->find
+          {
+              $sAnswerOtherTextId="answer{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}othertext";
+              $sAnswerOtherRadioId="SOTH{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}";
+              Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
+              Yii::import('archon810.SmartDOMDocument');
+              $dom = new \archon810\SmartDOMDocument();
+              $dom->loadHTML($oEvent->get('answers'));
+              $elOtherText=$dom->getElementById($sAnswerOtherTextId);
+              $elOtherText->setAttribute("aria-labelledby","label-{$sAnswerOtherRadioId}");
+              $elOtherText->removeAttribute ('title');
+              foreach ($dom->getElementsByTagName('label') as $elLabel)
+              {
+                  if($elLabel->getAttribute("for")==$sAnswerOtherRadioId)
+                      $elLabel->setAttribute('id',"label-{$sAnswerOtherRadioId}");
+                  if($elLabel->getAttribute("for")==$sAnswerOtherTextId)
+                  {
+                      $elLabel->parentNode->replaceChild($elOtherText, $elLabel);
+                  }
+              }
+              $newHtml = $dom->saveHTMLExact();
+              $oEvent->set('answers',$newHtml);
+          }
         }
     }
 }
