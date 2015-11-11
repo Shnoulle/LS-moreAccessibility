@@ -4,8 +4,9 @@ Some more accessibility for LimeSurvey, actually:
 
 - Replace the label for single question choice by label to the question
 - Fix the other label in single choice (radio) and multiple choice
+- Add roles and aria-labelledby for list of answers (radio and checkbox)
 - Optionnal: Use a real string for the asterisk in mandatory question type
-- Optionnal: Add fieldset for list of answers and subquestion
+- Optionnal: Add fieldset for list of answers and subquestion (deactuvate role and aria-labelledby for list).
 
 ## Installation
 
