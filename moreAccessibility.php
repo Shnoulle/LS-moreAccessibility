@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.2.0
+ * @version 1.3.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ class moreAccessibility extends PluginBase
     protected $settings = array(
         'infoAlwaysActivate'=>array(
             'type' => 'info',
-            'content' => 'Some system can not be deactivated : use question text for labelling the single question type, fix checkbox with other label and radio with other label.',
+            'content' => '<p class="alert">Some system can not be deactivated :</p><ul><li> use question text for labelling the single question type,</li><li> fix checkbox with other label and radio with other label.</li></ul>',
         ),
         'updateAsterisk' => array(
             'type' => 'select',
@@ -41,11 +41,12 @@ class moreAccessibility extends PluginBase
         'addAnswersFieldSet' => array(
             'type' => 'select',
             'options'=>array(
-                0=> 'No',
+                0=> 'No, use only aria',
                 1=> 'Yes'
             ),
             'default'=>0,
-            'label' => 'Add fieldset to answers art (list and array), attention : this can break your template.'
+            'label' => 'Add fieldset to answers art (list and array), attention : this can break your template.',
+            'help' => 'Is set to no : Radio list and checkbox list use aria=group and labelled-by'
         ),
     );
 
@@ -56,7 +57,7 @@ class moreAccessibility extends PluginBase
     {
         $this->subscribe('beforeQuestionRender','questiontextLabel');
         $this->subscribe('beforeQuestionRender','mandatoryString');
-        $this->subscribe('beforeQuestionRender','questionanswersFieldset');
+        $this->subscribe('beforeQuestionRender','questionanswersListGrouping');
         $this->subscribe('beforeQuestionRender','checkboxLabelOther');
         $this->subscribe('beforeQuestionRender','radioLabelOther');
     }
@@ -94,12 +95,12 @@ class moreAccessibility extends PluginBase
             if($oEvent->get('questionhelp'))
             {
                 $aLabelledBy[]="questionhelp-{$sAnswerId}";
-                $oEvent->set('questionhelp',CHtml::tag('span',array('id'=>"questionhelp-{$sAnswerId}"),$oEvent->get('questionhelp')));
+                $oEvent->set('questionhelp',CHtml::tag('div',array('id'=>"questionhelp-{$sAnswerId}"),$oEvent->get('questionhelp')));
             }
             if($oEvent->get('help'))
             {
                 $aLabelledBy[]="questionhelp-{$sAnswerId}";
-                $oEvent->set('help',CHtml::tag('span',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
+                $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
             }
             if(strip_tags($oEvent->get('valid_message'))!="")
             {
@@ -126,14 +127,19 @@ class moreAccessibility extends PluginBase
 
     }
 
+
+    public function questionanswersListGrouping()
+    {
+        if($this->get('addAnswersFieldSet'))
+            $this->addAnswersFieldSet();
+        else
+            $this->ariaAnswersGroup();
+    }
     /**
     * Add fieldset to multiple question or multiple answers, move quetsion text + help + tip to label
-    * @todo maybe leave part as place and use aria-labelledby but need a legend 
     */
-    public function questionanswersFieldset()
+    public function addAnswersFieldSet()
     {
-        if(!$this->get('addAnswersFieldSet'))
-            return;
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
         if(in_array($sType,array(
@@ -159,7 +165,71 @@ class moreAccessibility extends PluginBase
                 array('form'=>'limesurvey','class'=>'fixfieldset'),
                 CHtml::tag('legend',array(),$sLegend).$oEvent->get('answers')
                 ));
+        }
+    }
 
+    /**
+    * Use aria to group answers part
+    */
+    public function ariaAnswersGroup()
+    {
+        $oEvent=$this->getEvent();
+        $sType=$oEvent->get('type');
+        if(in_array($sType,array(
+            "M","P","Q","K", // Multiple question : text/numeric multiple
+            "Y","G","5","L","O", // Single choice (radio)
+            )))
+        {
+            $oEvent->set('text',CHtml::tag("div",array('id'=>"description-{$oEvent->get('qid')}"),$oEvent->get('text')));
+            $aDescribedBy=array(
+                "description-{$oEvent->get('qid')}",
+            );
+            // What is the good order ?
+            if($this->get('updateAsterisk') && $oEvent->get('man_class'))
+            {
+                $aDescribedBy[]="mandatory-{$oEvent->get('qid')}";
+            }
+            if($oEvent->get('questionhelp'))
+            {
+                $aDescribedBy[]="questionhelp-{$sAnswerId}";
+                $oEvent->set('questionhelp',CHtml::tag('div',array('id'=>"questionhelp-{$sAnswerId}"),$oEvent->get('questionhelp')));
+            }
+            if($oEvent->get('help'))
+            {
+                $aDescribedBy[]="questionhelp-{$sAnswerId}";
+                $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
+            }
+            if(strip_tags($oEvent->get('valid_message'))!="")
+            {
+                $aDescribedBy[]="vmsg_{$oEvent->get('qid')}";
+            }
+            else
+            {
+                $oEvent->set('valid_message','');
+            }
+            switch ($sType)
+            {
+              case "Y":
+              case "G":
+              case "5":
+              case "L":
+              case "O":
+                $sRole='radiogroup';
+                break;
+              default:
+                $sRole='group';
+            }
+            Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
+            Yii::import('archon810.SmartDOMDocument');
+            $dom = new \archon810\SmartDOMDocument();
+            $dom->loadHTML($oEvent->get('answers'));
+            foreach ($dom->getElementsByTagName('ul') as $elList)
+            {
+                $elList->setAttribute('role',$sRole);
+                $elList->setAttribute('aria-labelledby',implode(" ",$aDescribedBy));
+            }
+            $newHtml = $dom->saveHTMLExact();
+            $oEvent->set('answers',$newHtml);
         }
     }
 
