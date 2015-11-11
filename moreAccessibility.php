@@ -100,7 +100,7 @@ class moreAccessibility extends PluginBase
             }
             if($oEvent->get('help'))
             {
-                $aLabelledBy[]="questionhelp-{$sAnswerId}";
+                $aLabelledBy[]="help-{$sAnswerId}";
                 $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
             }
             if(strip_tags($oEvent->get('valid_message'))!="")
@@ -194,13 +194,13 @@ class moreAccessibility extends PluginBase
             }
             if($oEvent->get('questionhelp'))
             {
-                $aDescribedBy[]="questionhelp-{$sAnswerId}";
-                $oEvent->set('questionhelp',CHtml::tag('div',array('id'=>"questionhelp-{$sAnswerId}"),$oEvent->get('questionhelp')));
+                $aDescribedBy[]="questionhelp-{$oEvent->get('qid')}";
+                $oEvent->set('questionhelp',CHtml::tag('div',array('id'=>"questionhelp-{$oEvent->get('qid')}"),$oEvent->get('questionhelp')));
             }
             if($oEvent->get('help'))
             {
-                $aDescribedBy[]="questionhelp-{$sAnswerId}";
-                $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
+                $aDescribedBy[]="help-{$oEvent->get('qid')}";
+                $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$oEvent->get('qid')}"),$oEvent->get('help')));
             }
             if(strip_tags($oEvent->get('valid_message'))!="")
             {
