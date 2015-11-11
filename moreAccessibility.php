@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.3.0
+ * @version 1.3.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,11 +77,12 @@ class moreAccessibility extends PluginBase
             "!", // List dropdown
             )))
         {
+            $this->registerCssJs();
             $sAnswerId="answer{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}";
             $oEvent->set('text',CHtml::label(
                 $oEvent->get('text'),
                 $sAnswerId,
-                array('class'=>"fixlabel",'id'=>"label-{$sAnswerId}")
+                array('class'=>"moreaccessibility-fixlabel",'id'=>"label-{$sAnswerId}")
             ));
             // find the labelled-by
             $aLabelledBy=array(
@@ -149,6 +150,7 @@ class moreAccessibility extends PluginBase
             "F","H","A","B","E","C","1" // The arrays
             )))
         {
+            $this->registerCssJs();
             // No legend .... need more HTML update : fieldset must include questiontext + answers.
             $sLegend=CHtml::tag("div",array("class"=>'question-moved'),$oEvent->get('text'));
             $oEvent->set('text','');
@@ -180,7 +182,8 @@ class moreAccessibility extends PluginBase
             "Y","G","5","L","O", // Single choice (radio)
             )))
         {
-            $oEvent->set('text',CHtml::tag("div",array('id'=>"description-{$oEvent->get('qid')}"),$oEvent->get('text')));
+            $this->registerCssJs();
+            $oEvent->set('text',CHtml::tag("div",array('id'=>"description-{$oEvent->get('qid')}",'class'=>'moreaccessibility-fixlabel'),$oEvent->get('text')));
             $aDescribedBy=array(
                 "description-{$oEvent->get('qid')}",
             );
@@ -364,5 +367,14 @@ class moreAccessibility extends PluginBase
               $oEvent->set('answers',$newHtml);
           }
         }
+    }
+
+    /**
+    * Register needed css and js
+    */
+    private function registerCssJs()
+    {
+        $assetUrl = Yii::app()->assetManager->publish(dirname(__FILE__) . '/assets');
+        Yii::app()->clientScript->registerCssFile($assetUrl . '/css/moreaccessibility.css');
     }
 }
