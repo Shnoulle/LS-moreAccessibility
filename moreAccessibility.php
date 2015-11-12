@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.3.1
+ * @version 1.3.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,38 +79,7 @@ class moreAccessibility extends PluginBase
         {
             $this->registerCssJs();
             $sAnswerId="answer{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}";
-            $oEvent->set('text',CHtml::label(
-                $oEvent->get('text'),
-                $sAnswerId,
-                array('class'=>"moreaccessibility-fixlabel",'id'=>"label-{$sAnswerId}")
-            ));
-            // find the labelled-by
-            $aLabelledBy=array(
-                "label-{$sAnswerId}",
-            );
-            // What is the good order ?
-            if($this->get('updateAsterisk') && $oEvent->get('man_class'))
-            {
-                $aLabelledBy[]="mandatory-{$oEvent->get('qid')}";
-            }
-            if($oEvent->get('questionhelp'))
-            {
-                $aLabelledBy[]="questionhelp-{$sAnswerId}";
-                $oEvent->set('questionhelp',CHtml::tag('div',array('id'=>"questionhelp-{$sAnswerId}"),$oEvent->get('questionhelp')));
-            }
-            if($oEvent->get('help'))
-            {
-                $aLabelledBy[]="help-{$sAnswerId}";
-                $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$sAnswerId}"),$oEvent->get('help')));
-            }
-            if(strip_tags($oEvent->get('valid_message'))!="")
-            {
-                $aLabelledBy[]="vmsg_{$oEvent->get('qid')}";
-            }
-            else
-            {
-                $oEvent->set('valid_message','');
-            }
+            $aLabelledBy=$this->getDescribedBy($sAnswerId);
             Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
             Yii::import('archon810.SmartDOMDocument');
             $dom = new \archon810\SmartDOMDocument();
@@ -134,7 +103,10 @@ class moreAccessibility extends PluginBase
         if($this->get('addAnswersFieldSet'))
             $this->addAnswersFieldSet();
         else
-            $this->ariaAnswersGroup();
+        {
+            $this->ariaGroupOnList();
+            $this->ariaGroupOnArray();
+        }
     }
     /**
     * Add fieldset to multiple question or multiple answers, move quetsion text + help + tip to label
@@ -171,9 +143,9 @@ class moreAccessibility extends PluginBase
     }
 
     /**
-    * Use aria to group answers part
+    * Use aria to group answers part : list question type
     */
-    public function ariaAnswersGroup()
+    public function ariaGroupOnList()
     {
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
@@ -183,33 +155,7 @@ class moreAccessibility extends PluginBase
             )))
         {
             $this->registerCssJs();
-            $oEvent->set('text',CHtml::tag("div",array('id'=>"description-{$oEvent->get('qid')}",'class'=>'moreaccessibility-fixlabel'),$oEvent->get('text')));
-            $aDescribedBy=array(
-                "description-{$oEvent->get('qid')}",
-            );
-            // What is the good order ?
-            if($this->get('updateAsterisk') && $oEvent->get('man_class'))
-            {
-                $aDescribedBy[]="mandatory-{$oEvent->get('qid')}";
-            }
-            if($oEvent->get('questionhelp'))
-            {
-                $aDescribedBy[]="questionhelp-{$oEvent->get('qid')}";
-                $oEvent->set('questionhelp',CHtml::tag('div',array('id'=>"questionhelp-{$oEvent->get('qid')}"),$oEvent->get('questionhelp')));
-            }
-            if($oEvent->get('help'))
-            {
-                $aDescribedBy[]="help-{$oEvent->get('qid')}";
-                $oEvent->set('help',CHtml::tag('div',array('id'=>"help-{$oEvent->get('qid')}"),$oEvent->get('help')));
-            }
-            if(strip_tags($oEvent->get('valid_message'))!="")
-            {
-                $aDescribedBy[]="vmsg_{$oEvent->get('qid')}";
-            }
-            else
-            {
-                $oEvent->set('valid_message','');
-            }
+            $aDescribedBy=$this->getDescribedBy();
             switch ($sType)
             {
               case "Y":
@@ -236,6 +182,22 @@ class moreAccessibility extends PluginBase
         }
     }
 
+    /**
+    * Use aria to group answers part : array question type
+    * @todo
+    */
+    public function ariaGroupOnArray()
+    {
+        $oEvent=$this->getEvent();
+        $sType=$oEvent->get('type');
+        if(in_array($sType,array(
+            "F","H","A","B","E","C","1" // The arrays
+            )))
+        {
+            //$this->registerCssJs();
+            
+        }
+    }
     /**
     * Update the mandatory * to a clean string, according to question type
     */
@@ -284,7 +246,7 @@ class moreAccessibility extends PluginBase
                     $sMandatoryText="";
                     break;
             }
-            $oEvent->set('mandatory',CHtml::tag('span',array('id'=>"mandatory-{$oEvent->get('qid')}"),$sMandatoryText));
+            $oEvent->set('mandatory',CHtml::tag('div',array('id'=>"maccess-mandatory-{$oEvent->get('qid')}",'class'=>"maccess-mandatory"),$sMandatoryText));
         }
     }
 
@@ -376,5 +338,58 @@ class moreAccessibility extends PluginBase
     {
         $assetUrl = Yii::app()->assetManager->publish(dirname(__FILE__) . '/assets');
         Yii::app()->clientScript->registerCssFile($assetUrl . '/css/moreaccessibility.css');
+    }
+
+    /**
+    * get the initial describedby or labelledby and add the id to element
+    * @var sInputId : inputid
+    * @return array of id to use in describedby or labelledby
+    */
+    public function getDescribedBy($sInputId="")
+    {
+        $oEvent=$this->getEvent();
+        $iQid=$oEvent->get('qid');
+        $aDescribedBy=array();
+        if($oEvent->get('text'))
+        {
+          $aDescribedBy[]="maccess-text-{$iQid}";
+          if($sInputId)
+            $oEvent->set('text',CHtml::tag("label",array('for'=>$sInputId,'id'=>"maccess-text-{$iQid}",'class'=>'maccess-labelid maccess-text'),$oEvent->get('text')));
+          else
+            $oEvent->set('text',CHtml::tag("div",array('id'=>"maccess-text-{$iQid}",'class'=>'maccess-labelid maccess-text'),$oEvent->get('text')));
+        }
+        if($this->get('updateAsterisk') && $oEvent->get('man_class'))
+        {
+            $aDescribedBy[]="maccess-mandatory-{$iQid}";
+        }
+        if($oEvent->get('questionhelp'))
+        {
+            $aDescribedBy[]="maccess-questionhelp-{$iQid}";
+            $oEvent->set('questionhelp',
+              CHtml::tag('div',
+                array('id'=>"maccess-questionhelp-{$iQid}",'class'=>'maccess-labelid maccess-questionhelp'),
+                $oEvent->get('questionhelp')
+              )
+            );
+        }
+        if($oEvent->get('help'))
+        {
+            $aDescribedBy[]="maccess-help-{$iQid}";
+            $oEvent->set('help',
+              CHtml::tag('div',
+                array('id'=>"maccess-help-{$iQid}",'class'=>'maccess-labelid maccess-help'),
+                $oEvent->get('help')
+              )
+            );
+        }
+        if(strip_tags($oEvent->get('valid_message'))!="")
+        {
+            $aDescribedBy[]="vmsg_{$iQid}";
+        }
+        else
+        {
+            $oEvent->set('valid_message','');
+        }
+        return $aDescribedBy;
     }
 }
