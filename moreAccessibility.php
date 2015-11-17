@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.3.2
+ * @version 1.3.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -190,13 +190,77 @@ class moreAccessibility extends PluginBase
     {
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
+        
         if(in_array($sType,array(
-            "F","H","A","B","E","C","1" // The arrays
+            "F","A","B","E",";",":", // The arrays
+            "1", // Need more option dualscale_header, dropdown etc ...
             )))
         {
-            //$this->registerCssJs();
-            
+            $aGlobalDescribedBy=$this->getDescribedBy();
+            $this->registerCssJs();
+            Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
+            Yii::import('archon810.SmartDOMDocument');
+            $dom = new \archon810\SmartDOMDocument();
+            $dom->loadHTML($oEvent->get('answers'));
+            foreach ($dom->getElementsByTagName('table') as $elTable)
+            {
+                $elTable->setAttribute('role','group');
+                $elTable->setAttribute('aria-labelledby',implode(" ",$aGlobalDescribedBy));
+                // Fix update summary ? Add aria-hidden to head ?
+            }
+            switch ($sType)
+            {
+              case "F":
+                $bUseDropdown=QuestionAttribute::model()->find("qid=:qid and attribute=:attribute",array(':qid'=>$oEvent->get('qid'),':attribute'=>'use_dropdown'));
+                if($bUseDropdown && $bUseDropdown->value)
+                {
+                  $sLineRole=null;
+                  break;
+                }
+              case "B":
+              case "A":
+              case "E":
+                $sLineRole='radiogroup';
+                break;
+              case "1": // Double radio group : @todo fix-it : add dualscale_header(A|B)
+                $bUseDropdown=QuestionAttribute::model()->find("qid=:qid and attribute=:attribute",array(':qid'=>$oEvent->get('qid'),':attribute'=>'use_dropdown'));
+                if($bUseDropdown && $bUseDropdown->value)
+                {
+                  $sLineRole=null;
+                  break;
+                }
+              case ";":
+              case ":":
+
+              default:
+                $sLineRole='group';
+            }
+            if($sLineRole)
+            {
+              foreach ($dom->getElementsByTagName('tbody') as $elBody)
+              {
+                foreach ($elBody->getElementsByTagName('tr') as $elLine)
+                {
+                  $sLineId=$elLine->getAttribute('id');
+                  $sDescribedLine="";
+                  foreach ($elLine->getElementsByTagName('th') as $elListHead)
+                  {
+                    if($elListHead->getAttribute('class')=="answertext")
+                    {
+                      $elListHead->setAttribute('id',"maccess-line-description-{$sLineId}");
+                    }
+                    // ANd for other description part 
+                  }
+                  $elLine->setAttribute('role',$sLineRole);
+                  $elLine->setAttribute('aria-labelledby',"maccess-line-description-{$sLineId}");
+                }
+              }
+            }
+
+            $newHtml = $dom->saveHTMLExact();
+            $oEvent->set('answers',$newHtml);
         }
+        // H : array on column
     }
     /**
     * Update the mandatory * to a clean string, according to question type
