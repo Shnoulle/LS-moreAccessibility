@@ -13,11 +13,12 @@ Some more accessibility for LimeSurvey, actually:
 
 ### Via GIT
 - Go to your LimeSurvey Directory (version up to 2.05)
-- Clone with Submodule in plugins/moreAccessibility directory (git clone --recursive)
+- Clone with Submodule in plugins/moreAccessibility directory : `git clone --recursive https://git.framasoft.org/SondagePro-LimeSurvey-plugin/moreAccessibility.git moreAccessibility`
 
 ### Via ZIP dowload
-- Get the file and uncompress it
-- Move the files included to plugins/moreAccessibility directory
+- Download <http://extensions.sondages.pro/IMG/auto/moreAccessibility.zip> or <http://extensions.sondages.pro/IMG/auto/moreAccessibility.tar>
+- Extract : `unzip moreAccessibility.zip`
+- Move the directory to  plugins/ directory inside LimeSUrvey
 
 ## Home page & Copyright
 - HomePage <http://extensions.sondages.pro/>
@@ -25,3 +26,7 @@ Some more accessibility for LimeSurvey, actually:
 - Copyright © 2015 Denis Chenu <http://sondages.pro>
 - Licence : GNU General Public License <https://www.gnu.org/licenses/gpl-3.0.html>
 - This plugin use SmartDOMDocument © 2015 Artem Russakovskii <http://beerpla.net>
+- Icon use:
+  - Person <https://thenounproject.com/icon/13025/> by [WebPlatform.org](https://thenounproject.com/WebPlatform/)
+  - Checkboxes <https://thenounproject.com/icon/200545/> by [Alex Tai](https://thenounproject.com/skovalsky/)
+  - Login Form <https://thenounproject.com/icon/223178/> by [icon 54](https://thenounproject.com/icon54app/)
