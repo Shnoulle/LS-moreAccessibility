@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.3.3
+ * @version 1.3.4
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,10 @@ class moreAccessibility extends PluginBase
             foreach($dom->getElementsByTagName('label') as $label)
               $label->parentNode->removeChild($label);
             $input=$dom->getElementById($sAnswerId);
-            $input->setAttribute("aria-labelledby",implode(" ",$aLabelledBy));
+            if($input)
+                $input->setAttribute("aria-labelledby",implode(" ",$aLabelledBy));
+            else
+                tracevar("{$sAnswerId} Is not found in HTML produced for answers");
             $newHtml = $dom->saveHTMLExact();
 
             $oEvent->set('answers',$newHtml);
@@ -336,9 +339,14 @@ class moreAccessibility extends PluginBase
               $dom->loadHTML($oEvent->get('answers'));
               // Update the checkbox
               $cbox=$dom->getElementById($sAnswerOtherCboxId);
-              $cbox->setAttribute("aria-hidden","true");
-              $cbox->setAttribute("tabindex","-1");
-              $cbox->setAttribute("readonly","readonly");// disabled broken by survey-runtime
+              if($cbox)
+              {
+                $cbox->setAttribute("aria-hidden","true");
+                $cbox->setAttribute("tabindex","-1");
+                $cbox->setAttribute("readonly","readonly");// disabled broken by survey-runtime
+              }
+              else
+                tracevar("{$sAnswerOtherCboxId} Is not found in HTML produced for answers");
               // remove exiting script
               while (($r = $dom->getElementsByTagName("script")) && $r->length) {
                   $r->item(0)->parentNode->removeChild($r->item(0));
@@ -378,17 +386,22 @@ class moreAccessibility extends PluginBase
               $dom = new \archon810\SmartDOMDocument();
               $dom->loadHTML($oEvent->get('answers'));
               $elOtherText=$dom->getElementById($sAnswerOtherTextId);
-              $elOtherText->setAttribute("aria-labelledby","label-{$sAnswerOtherRadioId}");
-              $elOtherText->removeAttribute ('title');
-              foreach ($dom->getElementsByTagName('label') as $elLabel)
+              if($elOtherText)
               {
-                  if($elLabel->getAttribute("for")==$sAnswerOtherRadioId)
-                      $elLabel->setAttribute('id',"label-{$sAnswerOtherRadioId}");
-                  if($elLabel->getAttribute("for")==$sAnswerOtherTextId)
+                $elOtherText->setAttribute("aria-labelledby","label-{$sAnswerOtherRadioId}");
+                $elOtherText->removeAttribute ('title');
+                  foreach ($dom->getElementsByTagName('label') as $elLabel)
                   {
-                      $elLabel->parentNode->replaceChild($elOtherText, $elLabel);
+                      if($elLabel->getAttribute("for")==$sAnswerOtherRadioId)
+                          $elLabel->setAttribute('id',"label-{$sAnswerOtherRadioId}");
+                      if($elLabel->getAttribute("for")==$sAnswerOtherTextId)
+                      {
+                          $elLabel->parentNode->replaceChild($elOtherText, $elLabel);
+                      }
                   }
               }
+              else
+                tracevar("{$elOtherText} Is not found in HTML produced for answers");
               $newHtml = $dom->saveHTMLExact();
               $oEvent->set('answers',$newHtml);
           }
