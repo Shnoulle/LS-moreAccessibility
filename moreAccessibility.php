@@ -5,13 +5,13 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.3.4
+ * @version 1.3.5
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -27,7 +27,7 @@ class moreAccessibility extends PluginBase
     protected $settings = array(
         'infoAlwaysActivate'=>array(
             'type' => 'info',
-            'content' => '<p class="alert">Some system can not be deactivated :</p><ul><li> use question text for labelling the single question type,</li><li> fix checkbox with other label and radio with other label.</li></ul>',
+            'content' => '<div class="alert alert-info"><dl><dt>Some system can not be deactivated :</dt><dd> Use question text for labelling the single question type,</dd><dd>Fix checkbox with other label and radio with other label.</dd></dl></div>',
         ),
         'updateAsterisk' => array(
             'type' => 'select',
@@ -193,7 +193,7 @@ class moreAccessibility extends PluginBase
     {
         $oEvent=$this->getEvent();
         $sType=$oEvent->get('type');
-        
+
         if(in_array($sType,array(
             "F","A","B","E",";",":", // The arrays
             "1", // Need more option dualscale_header, dropdown etc ...
@@ -252,7 +252,7 @@ class moreAccessibility extends PluginBase
                     {
                       $elListHead->setAttribute('id',"maccess-line-description-{$sLineId}");
                     }
-                    // ANd for other description part 
+                    // ANd for other description part
                   }
                   $elLine->setAttribute('role',$sLineRole);
                   $elLine->setAttribute('aria-labelledby',"maccess-line-description-{$sLineId}");
