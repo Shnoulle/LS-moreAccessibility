@@ -3,9 +3,9 @@
  * Add/fix some accessibility for LimeSurvey
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2015 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2015-2016 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.3.5
+ * @version 1.4.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ class moreAccessibility extends PluginBase
         $this->subscribe('beforeQuestionRender','questionanswersListGrouping');
         $this->subscribe('beforeQuestionRender','checkboxLabelOther');
         $this->subscribe('beforeQuestionRender','radioLabelOther');
+        $this->subscribe('beforeQuestionRender','dropdownLabelOther');
     }
 
     /**
@@ -83,7 +84,8 @@ class moreAccessibility extends PluginBase
             Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
             Yii::import('archon810.SmartDOMDocument');
             $dom = new \archon810\SmartDOMDocument();
-            @$dom->loadHTML($oEvent->get('answers'));
+            $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>"); // Adding HTML/body : dropdwon with other have a bad script in 2.06
+
             foreach($dom->getElementsByTagName('label') as $label)
               $label->parentNode->removeChild($label);
             $input=$dom->getElementById($sAnswerId);
@@ -92,7 +94,6 @@ class moreAccessibility extends PluginBase
             else
                 tracevar("{$sAnswerId} Is not found in HTML produced for answers");
             $newHtml = $dom->saveHTMLExact();
-
             $oEvent->set('answers',$newHtml);
         }
         // Date question type give format information, leave it ?
@@ -174,7 +175,7 @@ class moreAccessibility extends PluginBase
             Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
             Yii::import('archon810.SmartDOMDocument');
             $dom = new \archon810\SmartDOMDocument();
-            $dom->loadHTML($oEvent->get('answers'));
+            $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>");
             foreach ($dom->getElementsByTagName('ul') as $elList)
             {
                 $elList->setAttribute('role',$sRole);
@@ -204,7 +205,7 @@ class moreAccessibility extends PluginBase
             Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
             Yii::import('archon810.SmartDOMDocument');
             $dom = new \archon810\SmartDOMDocument();
-            $dom->loadHTML($oEvent->get('answers'));
+            $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>");
             foreach ($dom->getElementsByTagName('table') as $elTable)
             {
                 $elTable->setAttribute('role','group');
@@ -336,7 +337,7 @@ class moreAccessibility extends PluginBase
               Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
               Yii::import('archon810.SmartDOMDocument');
               $dom = new \archon810\SmartDOMDocument();
-              $dom->loadHTML($oEvent->get('answers'));
+              $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>");
               // Update the checkbox
               $cbox=$dom->getElementById($sAnswerOtherCboxId);
               if($cbox)
@@ -384,7 +385,7 @@ class moreAccessibility extends PluginBase
               Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
               Yii::import('archon810.SmartDOMDocument');
               $dom = new \archon810\SmartDOMDocument();
-              $dom->loadHTML($oEvent->get('answers'));
+              $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>");
               $elOtherText=$dom->getElementById($sAnswerOtherTextId);
               if($elOtherText)
               {
@@ -407,7 +408,44 @@ class moreAccessibility extends PluginBase
           }
         }
     }
+    /*
+    * Fix labelling on other in dropdown list : use aria-labelledby for text input
+    */
+    public function dropdownLabelOther()
+    {
+        $oEvent=$this->getEvent();
+        $sType=$oEvent->get('type');
+        if($sType=="!")
+        {
+          if (strpos( $oEvent->get('answers'), 'id="othertext') > 0) // Only do it if we have other : can be done with Question::model()->find
+          {
+              $sAnswerOtherTextId="othertext{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}";
+              Yii::setPathOfAlias('archon810', dirname(__FILE__)."/vendor/archon810/smartdomdocument/src");
+              Yii::import('archon810.SmartDOMDocument');
+              $dom = new \archon810\SmartDOMDocument();
+              $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>");
+              $elOtherText=$dom->getElementById($sAnswerOtherTextId);
+              if($elOtherText)
+              {
+                /* find the option and add it the label : is it a good way ? */
+                foreach ($dom->getElementsByTagName('option') as $option)
+                {
+                  if($option->getAttribute('value') == "-oth-")
+                  {
+                    $elOtherOtion=$option;
+                    $option->setAttribute('id',"label-{$sAnswerOtherTextId}");
+                    $elOtherText->setAttribute('aria-labelledby',"label-{$sAnswerOtherTextId}");
+                    $newHtml = $dom->saveHTMLExact();
+                    $oEvent->set('answers',$newHtml);
+                    break;
+                  }
+                }
+              }
 
+
+          }
+        }
+    }
     /**
     * Register needed css and js
     */

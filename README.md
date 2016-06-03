@@ -9,6 +9,8 @@ Some more accessibility for LimeSurvey, actually:
 - Optionnal: Use a real string for the asterisk in mandatory question type
 - Optionnal: Add fieldset for list of answers and subquestion (deactivate role and aria-labelledby for list and array).
 
+This plugin was not tested with 2.50 version actually
+
 ## Installation
 
 ### Via GIT
@@ -23,7 +25,7 @@ Some more accessibility for LimeSurvey, actually:
 ## Home page & Copyright
 - HomePage <http://extensions.sondages.pro/>
 - Demonstration <http://accessible.sondages.pro> (WIP :can be broken)
-- Copyright © 2015 Denis Chenu <http://sondages.pro>
+- Copyright © 2015-2016 Denis Chenu <http://sondages.pro>
 - Licence : GNU General Public License <https://www.gnu.org/licenses/gpl-3.0.html>
 - This plugin use SmartDOMDocument © 2015 Artem Russakovskii <http://beerpla.net>
 - Icon use:
