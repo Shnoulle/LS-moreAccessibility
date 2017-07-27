@@ -55,6 +55,13 @@ class moreAccessibility extends PluginBase
     */
     public function init()
     {
+        /* Set to HTML5 */
+        global $embedded,$embedded_footerfunc,$embedded_headerfunc;
+        $embedded=true;
+        $embedded_footerfunc='getAccessibleFooter';
+        $embedded_headerfunc='getAccessibleHeader';
+        include_once(dirname(__FILE__)."/helpers/sethtml5.php");
+        /* Question to update */
         $this->subscribe('beforeQuestionRender','questiontextLabel');
         $this->subscribe('beforeQuestionRender','mandatoryString');
         $this->subscribe('beforeQuestionRender','questionanswersListGrouping');
