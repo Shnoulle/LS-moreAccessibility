@@ -347,14 +347,12 @@ class moreAccessibility extends PluginBase
               $dom->loadHTML("<HTML><body>".$oEvent->get('answers')."</body></HTML>");
               // Update the checkbox
               $cbox=$dom->getElementById($sAnswerOtherCboxId);
-              if($cbox)
-              {
+              if($cbox) {
                 $cbox->setAttribute("aria-hidden","true");
                 $cbox->setAttribute("tabindex","-1");
-                $cbox->setAttribute("readonly","readonly");// disabled broken by survey-runtime
-              }
-              else
+              } else {
                 tracevar("{$sAnswerOtherCboxId} Is not found in HTML produced for answers");
+              }
               // remove exiting script
               while (($r = $dom->getElementsByTagName("script")) && $r->length) {
                   $r->item(0)->parentNode->removeChild($r->item(0));
