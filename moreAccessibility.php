@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2015-2016 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.4.0
+ * @version 1.5.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,10 +96,12 @@ class moreAccessibility extends PluginBase
             foreach($dom->getElementsByTagName('label') as $label)
               $label->parentNode->removeChild($label);
             $input=$dom->getElementById($sAnswerId);
-            if($input)
-                $input->setAttribute("aria-labelledby",implode(" ",$aLabelledBy));
-            else
-                tracevar("{$sAnswerId} Is not found in HTML produced for answers");
+            if(!empty($aLabelledBy)) {
+                if($input)
+                    $input->setAttribute("aria-labelledby",implode(" ",$aLabelledBy));
+                else
+                    tracevar("{$sAnswerId} Is not found in HTML produced for answers");
+            }
             $newHtml = $dom->saveHTMLExact();
             $oEvent->set('answers',$newHtml);
         }
@@ -216,7 +218,9 @@ class moreAccessibility extends PluginBase
             foreach ($dom->getElementsByTagName('table') as $elTable)
             {
                 $elTable->setAttribute('role','group');
-                $elTable->setAttribute('aria-labelledby',implode(" ",$aGlobalDescribedBy));
+                if(!empty($aGlobalDescribedBy)) {
+                    $elTable->setAttribute('aria-labelledby',implode(" ",$aGlobalDescribedBy));
+                }
                 // Fix update summary ? Add aria-hidden to head ?
             }
             switch ($sType)
@@ -267,7 +271,6 @@ class moreAccessibility extends PluginBase
                 }
               }
             }
-
             $newHtml = $dom->saveHTMLExact();
             $oEvent->set('answers',$newHtml);
         }
